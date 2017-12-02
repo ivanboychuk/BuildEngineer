@@ -4,10 +4,6 @@ import (
 	"os"
 )
 
-func logMsg(message string){
-	print("Messages!\n", message)
-}
-
 // Logs the transactions like: 1:P1+100
 // 1 - started
 // 0 - finished

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 	"bufio"
-	"fmt"
+	"strings"
 )
 
 var players []PlayerInfo
@@ -19,12 +19,11 @@ var transactionfile string
 func DataInitialization() {
 	transactionfile = "today.log"
 	if _, err := os.Stat(transactionfile); !os.IsNotExist(err) {
-		logTransaction("0", "A new run: ", time.Now().String())
+		logTransaction("10", "A new run: ", time.Now().String())
 	} else {
 		os.Create(transactionfile)
 	}
-	DatacheckLatestTransaction()
-	logMsg(transactionfile)
+	DataCheckLatestTransaction()
 	tournamentsId = 0
 	for i := 1; i < 6; i++ {
 		DataAddPlayer(PlayerInfo{"P"+strconv.Itoa(i), 0})
@@ -37,8 +36,29 @@ func DataInitialization() {
 	DataIncreasePoint("P5", 1000)
 }
 
+func DataRestoreOperation(operation string){
+	print("Restore operation: "+operation+"\n")
+	operation = strings.Split(operation, ":")[1]
+	if strings.Index(operation, "+") > 0{
+		points, err := strconv.Atoi(strings.Split(operation, "+")[1])
+		if err != nil{
+			log.Panic("Could not restore operation: ", operation)
+		}
+		DataIncreasePoint(strings.Split(operation, "+")[0], points)
+	} else if strings.Index(operation, "-") > 0{
+		points, err := strconv.Atoi(strings.Split(operation, "-")[1])
+		if err != nil{
+			log.Panic("Could not restore operation: ", operation)
+		}
+		DataDecreasePoint(strings.Split(operation, "-")[0], points)
+	} else{
+		print("Could not restore operation: ", operation)
+	}
+
+}
+
 // Checks latest transaction and re-run if it is unsuccessful
-func DatacheckLatestTransaction(){
+func DataCheckLatestTransaction(){
 	file, err := os.Open(transactionfile)
 	if err != nil {
 		log.Fatal(err)
@@ -46,8 +66,39 @@ func DatacheckLatestTransaction(){
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	transactions := 0
+	var operationsStart []string
+	var operationsEnd []string
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		status := strings.Split(scanner.Text(), ":")[0]
+		operation := strings.Split(scanner.Text(), ":")[1]
+		if status == "10"{
+			transactions = 0
+			continue
+		} else if status == "1"{
+			operationsStart = append(operationsStart, operation)
+			transactions += 1
+		} else if status == "0"{
+			operationsEnd = append(operationsEnd, operation)
+			transactions -= 1
+		}
+	}
+	if transactions == 0{
+		print("All transactions passed\n")
+	} else {
+		print("Not all operations successful")
+		goodOperation := false
+		for _, start := range operationsStart{
+			for _, end := range operationsEnd{
+				if start == end{
+					goodOperation = true
+				}
+			}
+			if !goodOperation{
+				DataRestoreOperation(start)
+			}
+		}
+
 	}
 
 	if err := scanner.Err(); err != nil {
