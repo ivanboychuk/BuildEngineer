@@ -3,7 +3,7 @@ package main
 import (
     "log"
     "net/http"
-    "tournament"
+    "./tournament"
 )
 
 func main(){

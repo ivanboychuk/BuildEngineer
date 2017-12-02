@@ -2,7 +2,7 @@ package tournament
 
 import (
 	"net/http"
-	"github.com/gorilla/mux"
+	"../github.com/gorilla/mux"
 )
 
 type Route struct {
